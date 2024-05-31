@@ -1,30 +1,34 @@
-document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
-  
+document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Impede o envio padrão do formulário
+
     const fileInput = document.getElementById('fileInput');
     const file = fileInput.files[0];
-  
-    if (!file) {
-      alert('Por favor, selecione um arquivo!');
-      return;
+
+    if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('http://localhost:10000/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'adjusted-file.txt';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.getElementById('response').textContent = 'Arquivo baixado com sucesso!';
+        })
+        .catch(error => {
+            console.error('Erro ao enviar o arquivo:', error);
+            document.getElementById('response').textContent = 'Erro ao enviar o arquivo. Tente novamente.';
+        });
+    } else {
+        alert('Por favor, selecione um arquivo.');
     }
-  
-    const formData = new FormData();
-    formData.append('file', file);
-  
-    try {
-      const response = await axios.post('/upload', formData, {
-        responseType: 'blob'
-      });
-  
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const downloadLink = document.getElementById('downloadLink');
-      downloadLink.href = url;
-      downloadLink.setAttribute('download', 'adjusted-file.txt');
-      downloadLink.style.display = 'block';
-      downloadLink.textContent = 'Download Adjusted File';
-    } catch (error) {
-      console.error('Erro ao fazer upload do arquivo:', error);
-      alert('Erro ao fazer upload do arquivo. Veja o console para mais detalhes.');
-    }
-  });
+});
